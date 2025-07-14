@@ -1,0 +1,1658 @@
+// scripts/generateTemplates.ts
+import { TemplateFactory } from '../src/services/templates/TemplateFactory';
+import { TemplateCategory, Template } from '../src/types/template.types';
+import { coreTemplates } from '../src/data/templates/core';
+import { scrollTriggerTemplates } from '../src/data/templates/scrollTrigger';
+import fs from 'fs';
+import path from 'path';
+
+/**
+ * Template Variation Generator
+ * Generates variations of base templates with different parameters
+ */
+class TemplateVariationGenerator {
+  private factory: TemplateFactory;
+  
+  constructor() {
+    this.factory = new TemplateFactory();
+  }
+
+  /**
+   * Generate fade animation variations
+   */
+  generateFadeVariations(): Template[] {
+    const variations: Template[] = [];
+    
+    // Directional fades
+    const directions = ['Up', 'Down', 'Left', 'Right'];
+    const offsets = { Up: { y: 50 }, Down: { y: -50 }, Left: { x: 50 }, Right: { x: -50 } };
+    
+    directions.forEach(direction => {
+      const offset = offsets[direction];
+      variations.push(
+        this.factory.createTemplate({
+          name: `Fade In ${direction}`,
+          category: TemplateCategory.CORE,
+          subcategory: "fade",
+          description: `Fade in from ${direction.toLowerCase()}`,
+          difficulty: "beginner",
+          
+          code: `gsap.from("[data-element-id='\${params.elementId}']", {
+  opacity: 0,
+  ${offset.x ? `x: ${offset.x},` : ''}
+  ${offset.y ? `y: ${offset.y},` : ''}
+  duration: \${params.duration},
+  ease: "\${params.ease}",
+  delay: \${params.delay}
+})`,
+          
+          preview: {
+            html: `<div class="preview-container">
+  <div class="preview-element" data-element-id="preview">
+    <h2>Fade In ${direction}</h2>
+  </div>
+</div>`
+          },
+          
+          parameters: [
+            {
+              name: "duration",
+              type: "range",
+              default: 1,
+              min: 0.1,
+              max: 3,
+              step: 0.1,
+              description: "Animation duration"
+            },
+            {
+              name: "ease",
+              type: "select",
+              default: "power2.out",
+              options: [
+                { label: "Power2 Out", value: "power2.out" },
+                { label: "Power3 Out", value: "power3.out" },
+                { label: "Expo Out", value: "expo.out" }
+              ],
+              description: "Easing function"
+            },
+            {
+              name: "delay",
+              type: "number",
+              default: 0,
+              min: 0,
+              max: 5,
+              description: "Delay before animation"
+            }
+          ],
+          
+          examplePrompts: [
+            `fade in from ${direction.toLowerCase()}`,
+            `${direction.toLowerCase()} fade animation`,
+            `slide fade ${direction.toLowerCase()}`
+          ],
+          
+          commonUseCases: ["Content reveals", "Hero animations", "Card entrances"]
+        })
+      );
+    });
+    
+    return variations;
+  }
+
+  /**
+   * Generate scale animation variations
+   */
+  generateScaleVariations(): Template[] {
+    const variations: Template[] = [];
+    
+    // Scale with rotation
+    variations.push(
+      this.factory.createTemplate({
+        name: "Scale Rotate In",
+        category: TemplateCategory.CORE,
+        subcategory: "scale",
+        description: "Scale and rotate entrance",
+        difficulty: "intermediate",
+        
+        code: `gsap.from("[data-element-id='\${params.elementId}']", {
+  scale: \${params.startScale},
+  rotation: \${params.rotation},
+  opacity: 0,
+  duration: \${params.duration},
+  ease: "\${params.ease}",
+  transformOrigin: "\${params.origin}"
+})`,
+        
+        preview: {
+          html: `<div class="preview-container">
+  <div class="preview-element" data-element-id="preview">
+    <h2>Scale & Rotate</h2>
+  </div>
+</div>`
+        },
+        
+        parameters: [
+          {
+            name: "startScale",
+            type: "range",
+            default: 0,
+            min: 0,
+            max: 2,
+            step: 0.1,
+            description: "Starting scale"
+          },
+          {
+            name: "rotation",
+            type: "number",
+            default: 180,
+            min: -360,
+            max: 360,
+            description: "Rotation degrees"
+          },
+          {
+            name: "duration",
+            type: "range",
+            default: 0.5,
+            min: 0.1,
+            max: 2,
+            step: 0.1,
+            description: "Animation duration per character"
+          },
+          {
+            name: "staggerTime",
+            type: "range",
+            default: 0.05,
+            min: 0.01,
+            max: 0.2,
+            step: 0.01,
+            description: "Stagger delay between characters"
+          },
+          {
+            name: "staggerFrom",
+            type: "select",
+            default: "start",
+            options: [
+              { label: "Start", value: "start" },
+              { label: "End", value: "end" },
+              { label: "Center", value: "center" },
+              { label: "Random", value: "random" }
+            ],
+            description: "Stagger direction"
+          },
+          {
+            name: "ease",
+            type: "select",
+            default: "power3.out",
+            options: [
+              { label: "Power3 Out", value: "power3.out" },
+              { label: "Back Out", value: "back.out(1.7)" },
+              { label: "Elastic Out", value: "elastic.out(1, 0.3)" }
+            ],
+            description: "Easing function"
+          }
+        ],
+        
+        requiredPlugins: [],
+        
+        examplePrompts: [
+          "character wave animation",
+          "text wave effect",
+          "letter by letter animation",
+          "wavy text reveal"
+        ],
+        
+        commonUseCases: ["Headlines", "Logo animations", "Loading text", "Creative typography"]
+      })
+    );
+    
+    return variations;
+  }
+
+  /**
+   * Generate all template variations
+   */
+  generateAllVariations(): Template[] {
+    console.log('Generating template variations...');
+    
+    const allVariations = [
+      ...this.generateFadeVariations(),
+      ...this.generateScaleVariations(),
+      ...this.generateTextVariations()
+    ];
+    
+    console.log(`Generated ${allVariations.length} template variations`);
+    return allVariations;
+  }
+}
+
+/**
+ * Template Batch Generator
+ * Generates templates in batches for each category
+ */
+class TemplateBatchGenerator {
+  private factory: TemplateFactory;
+  private variationGenerator: TemplateVariationGenerator;
+  
+  constructor() {
+    this.factory = new TemplateFactory();
+    this.variationGenerator = new TemplateVariationGenerator();
+  }
+
+  /**
+   * Generate templates for a specific category range
+   */
+  generateCategoryTemplates(
+    category: TemplateCategory,
+    startId: number,
+    endId: number
+  ): Template[] {
+    const templates: Template[] = [];
+    
+    // Add base templates
+    switch (category) {
+      case TemplateCategory.CORE:
+        templates.push(...coreTemplates);
+        break;
+      case TemplateCategory.SCROLL_TRIGGER:
+        templates.push(...scrollTriggerTemplates);
+        break;
+      // Add other categories as they're created
+    }
+    
+    // Generate variations to fill the range
+    const variations = this.variationGenerator.generateAllVariations();
+    const neededCount = endId - startId + 1 - templates.length;
+    
+    if (neededCount > 0) {
+      templates.push(...variations.slice(0, neededCount));
+    }
+    
+    return templates;
+  }
+
+  /**
+   * Save templates to JSON files
+   */
+  saveTemplatesToFile(templates: Template[], filename: string): void {
+    const outputDir = path.join(__dirname, '../output/templates');
+    
+    // Create output directory if it doesn't exist
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+    
+    const filePath = path.join(outputDir, filename);
+    fs.writeFileSync(filePath, JSON.stringify(templates, null, 2));
+    
+    console.log(`Saved ${templates.length} templates to ${filePath}`);
+  }
+
+  /**
+   * Generate template manifest for AI optimization
+   */
+  generateTemplateManifest(templates: Template[]): void {
+    const manifest = {
+      version: "1.0.0",
+      totalTemplates: templates.length,
+      categories: {} as Record<string, any>,
+      keywords: new Set<string>(),
+      prompts: [] as string[]
+    };
+    
+    // Categorize templates
+    templates.forEach(template => {
+      if (!manifest.categories[template.category]) {
+        manifest.categories[template.category] = {
+          count: 0,
+          subcategories: new Set<string>(),
+          templateIds: []
+        };
+      }
+      
+      const categoryData = manifest.categories[template.category];
+      categoryData.count++;
+      categoryData.subcategories.add(template.subcategory);
+      categoryData.templateIds.push(template.id);
+      
+      // Collect all keywords and prompts
+      template.keywords.forEach(keyword => manifest.keywords.add(keyword));
+      manifest.prompts.push(...template.examplePrompts);
+    });
+    
+    // Convert sets to arrays for JSON serialization
+    Object.keys(manifest.categories).forEach(category => {
+      manifest.categories[category].subcategories = 
+        Array.from(manifest.categories[category].subcategories);
+    });
+    manifest.keywords = Array.from(manifest.keywords) as any;
+    
+    // Remove duplicate prompts
+    manifest.prompts = [...new Set(manifest.prompts)];
+    
+    const outputDir = path.join(__dirname, '../output/templates');
+    const manifestPath = path.join(outputDir, 'template-manifest.json');
+    
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+    console.log(`Generated template manifest at ${manifestPath}`);
+  }
+
+  /**
+   * Generate SQL insert statements for database
+   */
+  generateSQLInserts(templates: Template[]): void {
+    const statements: string[] = [];
+    
+    templates.forEach(template => {
+      const sql = `
+INSERT INTO templates (
+  template_id, name, category, subcategory, description, 
+  code, preview_html, preview_css, thumbnail, 
+  required_plugins, difficulty, performance_score, 
+  mobile_optimized, example_prompts, keywords
+) VALUES (
+  '${template.id}',
+  '${template.name.replace(/'/g, "''")}',
+  '${template.category}',
+  '${template.subcategory}',
+  '${template.description.replace(/'/g, "''")}',
+  '${template.code.replace(/'/g, "''")}',
+  '${template.preview.html.replace(/'/g, "''")}',
+  '${template.preview.css.replace(/'/g, "''")}',
+  '${template.preview.thumbnail}',
+  '${JSON.stringify(template.requiredPlugins)}',
+  '${template.difficulty}',
+  ${template.performanceScore},
+  ${template.mobileOptimized},
+  '${JSON.stringify(template.examplePrompts)}',
+  '${JSON.stringify(template.keywords)}'
+);`;
+      
+      statements.push(sql);
+    });
+    
+    const outputDir = path.join(__dirname, '../output/templates');
+    const sqlPath = path.join(outputDir, 'templates-insert.sql');
+    
+    fs.writeFileSync(sqlPath, statements.join('\n\n'));
+    console.log(`Generated SQL inserts at ${sqlPath}`);
+  }
+
+  /**
+   * Generate TypeScript constants file
+   */
+  generateTypeScriptConstants(templates: Template[]): void {
+    const content = `// Auto-generated template constants
+// Generated on ${new Date().toISOString()}
+
+import { Template } from '../types/template.types';
+
+export const TEMPLATE_IDS = {
+${templates.map(t => `  ${t.name.replace(/\s+/g, '_').toUpperCase()}: '${t.id}'`).join(',\n')}
+} as const;
+
+export const TEMPLATE_MAP = new Map<string, Template>([
+${templates.map(t => `  ['${t.id}', ${JSON.stringify(t, null, 2).split('\n').join('\n  ')}]`).join(',\n')}
+]);
+
+export const getTemplateById = (id: string): Template | undefined => {
+  return TEMPLATE_MAP.get(id);
+};
+
+export const getTemplatesByCategory = (category: string): Template[] => {
+  return Array.from(TEMPLATE_MAP.values()).filter(t => t.category === category);
+};
+
+export const searchTemplates = (query: string): Template[] => {
+  const lowercaseQuery = query.toLowerCase();
+  return Array.from(TEMPLATE_MAP.values()).filter(t => 
+    t.name.toLowerCase().includes(lowercaseQuery) ||
+    t.description.toLowerCase().includes(lowercaseQuery) ||
+    t.keywords.some(k => k.includes(lowercaseQuery)) ||
+    t.examplePrompts.some(p => p.toLowerCase().includes(lowercaseQuery))
+  );
+};
+`;
+    
+    const outputDir = path.join(__dirname, '../output/templates');
+    const tsPath = path.join(outputDir, 'template-constants.ts');
+    
+    fs.writeFileSync(tsPath, content);
+    console.log(`Generated TypeScript constants at ${tsPath}`);
+  }
+
+  /**
+   * Run the complete generation process
+   */
+  async runGeneration(): Promise<void> {
+    console.log('Starting template generation process...\n');
+    
+    // Generate templates for each category
+    const allTemplates: Template[] = [];
+    
+    // Core animations (ID-t1 to ID-t50)
+    console.log('Generating Core Animation templates...');
+    const coreTemplates = this.generateCategoryTemplates(
+      TemplateCategory.CORE,
+      1,
+      50
+    );
+    allTemplates.push(...coreTemplates);
+    this.saveTemplatesToFile(coreTemplates, 'core-templates.json');
+    
+    // ScrollTrigger animations (ID-t51 to ID-t150)
+    console.log('Generating ScrollTrigger templates...');
+    const scrollTemplates = this.generateCategoryTemplates(
+      TemplateCategory.SCROLL_TRIGGER,
+      51,
+      150
+    );
+    allTemplates.push(...scrollTemplates);
+    this.saveTemplatesToFile(scrollTemplates, 'scrolltrigger-templates.json');
+    
+    // Generate combined outputs
+    console.log('\nGenerating combined outputs...');
+    this.saveTemplatesToFile(allTemplates, 'all-templates.json');
+    this.generateTemplateManifest(allTemplates);
+    this.generateSQLInserts(allTemplates);
+    this.generateTypeScriptConstants(allTemplates);
+    
+    console.log(`\n✅ Template generation complete!`);
+    console.log(`Total templates generated: ${allTemplates.length}`);
+    console.log(`Output directory: ${path.join(__dirname, '../output/templates')}`);
+  }
+}
+
+// Run the generator if this file is executed directly
+if (require.main === module) {
+  const generator = new TemplateBatchGenerator();
+  generator.runGeneration().catch(console.error);
+}
+
+export { TemplateVariationGenerator, TemplateBatchGenerator }; "range",
+            default: 0.8,
+            min: 0.2,
+            max: 2,
+            step: 0.1,
+            description: "Animation duration"
+          },
+          {
+            name: "ease",
+            type: "select",
+            default: "back.out(1.7)",
+            options: [
+              { label: "Back Out", value: "back.out(1.7)" },
+              { label: "Elastic Out", value: "elastic.out(1, 0.3)" },
+              { label: "Power3 Out", value: "power3.out" }
+            ],
+            description: "Easing function"
+          },
+          {
+            name: "origin",
+            type: "select",
+            default: "center",
+            options: [
+              { label: "Center", value: "center" },
+              { label: "Top Left", value: "top left" },
+              { label: "Bottom Right", value: "bottom right" }
+            ],
+            description: "Transform origin"
+          }
+        ],
+        
+        examplePrompts: [
+          "scale and rotate",
+          "spinning scale animation",
+          "rotate zoom effect"
+        ],
+        
+        commonUseCases: ["Logo animations", "Icon reveals", "Interactive elements"]
+      })
+    );
+    
+    // Elastic scale
+    variations.push(
+      this.factory.createTemplate({
+        name: "Elastic Scale",
+        category: TemplateCategory.CORE,
+        subcategory: "scale",
+        description: "Elastic scaling effect",
+        difficulty: "intermediate",
+        
+        code: `gsap.from("[data-element-id='\${params.elementId}']", {
+  scaleX: \${params.scaleX},
+  scaleY: \${params.scaleY},
+  duration: \${params.duration},
+  ease: "elastic.out(\${params.elasticity}, \${params.amplitude})",
+  delay: \${params.delay}
+})`,
+        
+        preview: {
+          html: `<div class="preview-container">
+  <div class="preview-element" data-element-id="preview">
+    <h2>Elastic!</h2>
+  </div>
+</div>`
+        },
+        
+        parameters: [
+          {
+            name: "scaleX",
+            type: "range",
+            default: 0,
+            min: 0,
+            max: 2,
+            step: 0.1,
+            description: "Starting X scale"
+          },
+          {
+            name: "scaleY",
+            type: "range",
+            default: 0,
+            min: 0,
+            max: 2,
+            step: 0.1,
+            description: "Starting Y scale"
+          },
+          {
+            name: "duration",
+            type: "range",
+            default: 1.2,
+            min: 0.5,
+            max: 3,
+            step: 0.1,
+            description: "Animation duration"
+          },
+          {
+            name: "elasticity",
+            type: "range",
+            default: 1,
+            min: 0.5,
+            max: 2,
+            step: 0.1,
+            description: "Elastic strength"
+          },
+          {
+            name: "amplitude",
+            type: "range",
+            default: 0.3,
+            min: 0.1,
+            max: 0.8,
+            step: 0.1,
+            description: "Elastic amplitude"
+          },
+          {
+            name: "delay",
+            type: "number",
+            default: 0,
+            min: 0,
+            max: 2,
+            description: "Animation delay"
+          }
+        ],
+        
+        examplePrompts: [
+          "elastic scale",
+          "bouncy scale",
+          "spring scale effect"
+        ],
+        
+        commonUseCases: ["Button interactions", "Playful UI", "Notification alerts"]
+      })
+    );
+    
+    return variations;
+  }
+
+  /**
+   * Generate text animation variations
+   */
+  generateTextVariations(): Template[] {
+    const variations: Template[] = [];
+    
+    // Character stagger
+    variations.push(
+      this.factory.createTemplate({
+        name: "Character Wave",
+        category: TemplateCategory.TEXT,
+        subcategory: "split",
+        description: "Wave animation through characters",
+        difficulty: "advanced",
+        
+        code: `// Split text into characters
+const text = document.querySelector("[data-element-id='\${params.elementId}']");
+const chars = text.textContent.split('');
+text.innerHTML = chars.map(char => 
+  \`<span class="char">\${char === ' ' ? '&nbsp;' : char}</span>\`
+).join('');
+
+// Animate characters
+gsap.from(text.querySelectorAll('.char'), {
+  y: \${params.yOffset},
+  opacity: 0,
+  duration: \${params.duration},
+  stagger: {
+    each: \${params.staggerTime},
+    from: "\${params.staggerFrom}"
+  },
+  ease: "\${params.ease}"
+})`,
+        
+        preview: {
+          html: `<div class="preview-container">
+  <h1 data-element-id="preview">WAVE EFFECT</h1>
+</div>`
+        },
+        
+        parameters: [
+          {
+            name: "yOffset",
+            type: "number",
+            default: 30,
+            min: 0,
+            max: 100,
+            description: "Vertical offset"
+          },
+          {
+name: "duration",
+            type: "range",
+            default: 0.5,
+            min: 0.1,
+            max: 2,
+            step: 0.1,
+            description: "Animation duration per character"
+          },
+          {
+            name: "staggerTime",
+            type: "range",
+            default: 0.05,
+            min: 0.01,
+            max: 0.2,
+            step: 0.01,
+            description: "Stagger delay between characters"
+          },
+          {
+            name: "staggerFrom",
+            type: "select",
+            default: "start",
+            options: [
+              { label: "Start", value: "start" },
+              { label: "End", value: "end" },
+              { label: "Center", value: "center" },
+              { label: "Random", value: "random" }
+            ],
+            description: "Stagger direction"
+          },
+          {
+            name: "ease",
+            type: "select",
+            default: "power3.out",
+            options: [
+              { label: "Power3 Out", value: "power3.out" },
+              { label: "Back Out", value: "back.out(1.7)" },
+              { label: "Elastic Out", value: "elastic.out(1, 0.3)" }
+            ],
+            description: "Easing function"
+          }
+        ],
+        
+        requiredPlugins: [],
+        
+        examplePrompts: [
+          "character wave animation",
+          "text wave effect",
+          "letter by letter animation",
+          "wavy text reveal"
+        ],
+        
+        commonUseCases: ["Headlines", "Logo animations", "Loading text", "Creative typography"]
+      })
+    );
+
+    // Word split animation
+    variations.push(
+      this.factory.createTemplate({
+        name: "Word Cascade",
+        category: TemplateCategory.TEXT,
+        subcategory: "split",
+        description: "Cascade animation for words",
+        difficulty: "intermediate",
+        
+        code: `// Split text into words
+const text = document.querySelector("[data-element-id='\${params.elementId}']");
+const words = text.textContent.split(' ');
+text.innerHTML = words.map(word => 
+  \`<span class="word">\${word}</span>\`
+).join(' ');
+
+// Animate words
+gsap.from(text.querySelectorAll('.word'), {
+  y: \${params.yOffset},
+  opacity: 0,
+  rotationX: \${params.rotationX},
+  duration: \${params.duration},
+  stagger: \${params.staggerTime},
+  ease: "\${params.ease}"
+})`,
+        
+        preview: {
+          html: `<div class="preview-container">
+  <h2 data-element-id="preview">Word by word cascade effect</h2>
+</div>`
+        },
+        
+        parameters: [
+          {
+            name: "yOffset",
+            type: "number",
+            default: 50,
+            min: 0,
+            max: 200,
+            description: "Vertical offset"
+          },
+          {
+            name: "rotationX",
+            type: "number",
+            default: 90,
+            min: 0,
+            max: 180,
+            description: "X-axis rotation"
+          },
+          {
+            name: "duration",
+            type: "range",
+            default: 0.8,
+            min: 0.2,
+            max: 2,
+            step: 0.1,
+            description: "Animation duration per word"
+          },
+          {
+            name: "staggerTime",
+            type: "range",
+            default: 0.1,
+            min: 0.02,
+            max: 0.5,
+            step: 0.02,
+            description: "Stagger delay between words"
+          },
+          {
+            name: "ease",
+            type: "select",
+            default: "power2.out",
+            options: [
+              { label: "Power2 Out", value: "power2.out" },
+              { label: "Power3 Out", value: "power3.out" },
+              { label: "Expo Out", value: "expo.out" }
+            ],
+            description: "Easing function"
+          }
+        ],
+        
+        examplePrompts: [
+          "word cascade",
+          "word by word animation",
+          "text cascade effect",
+          "dropping words"
+        ],
+        
+        commonUseCases: ["Headlines", "Quotes", "Marketing copy", "Presentations"]
+      })
+    );
+
+    // Typewriter effect
+    variations.push(
+      this.factory.createTemplate({
+        name: "Typewriter",
+        category: TemplateCategory.TEXT,
+        subcategory: "reveal",
+        description: "Classic typewriter effect",
+        difficulty: "beginner",
+        
+        code: `const text = document.querySelector("[data-element-id='\${params.elementId}']");
+const originalText = text.textContent;
+text.textContent = '';
+
+gsap.to(text, {
+  duration: \${params.duration},
+  text: {
+    value: originalText,
+    delimiter: ""
+  },
+  ease: "\${params.ease}",
+  onUpdate: function() {
+    if (\${params.showCursor}) {
+      text.style.borderRight = '2px solid currentColor';
+      text.style.paddingRight = '2px';
+    }
+  },
+  onComplete: function() {
+    if (\${params.showCursor} && !\${params.keepCursor}) {
+      text.style.borderRight = 'none';
+      text.style.paddingRight = '0';
+    }
+  }
+})`,
+        
+        preview: {
+          html: `<div class="preview-container">
+  <p data-element-id="preview">This text appears like it's being typed...</p>
+</div>`
+        },
+        
+        parameters: [
+          {
+            name: "duration",
+            type: "range",
+            default: 3,
+            min: 0.5,
+            max: 10,
+            step: 0.5,
+            description: "Total typing duration"
+          },
+          {
+            name: "ease",
+            type: "select",
+            default: "none",
+            options: [
+              { label: "Linear", value: "none" },
+              { label: "Power1 In", value: "power1.in" },
+              { label: "Steps", value: "steps(20)" }
+            ],
+            description: "Typing rhythm"
+          },
+          {
+            name: "showCursor",
+            type: "boolean",
+            default: true,
+            description: "Show typing cursor"
+          },
+          {
+            name: "keepCursor",
+            type: "boolean",
+            default: false,
+            description: "Keep cursor after typing"
+          }
+        ],
+        
+        requiredPlugins: ["TextPlugin"],
+        
+        examplePrompts: [
+          "typewriter effect",
+          "typing animation",
+          "text typing",
+          "terminal effect"
+        ],
+        
+        commonUseCases: ["Terminal UI", "Chat interfaces", "Story telling", "Code demonstrations"]
+      })
+    );
+    
+    return variations;
+  }
+
+  /**
+   * Generate ScrollTrigger variations
+   */
+  generateScrollTriggerVariations(): Template[] {
+    const variations: Template[] = [];
+    
+    // Parallax scroll
+    variations.push(
+      this.factory.createTemplate({
+        name: "Parallax Scroll",
+        category: TemplateCategory.SCROLL_TRIGGER,
+        subcategory: "parallax",
+        description: "Parallax scrolling effect",
+        difficulty: "intermediate",
+        
+        code: `gsap.to("[data-element-id='\${params.elementId}']", {
+  yPercent: \${params.speed} * -100,
+  ease: "none",
+  scrollTrigger: {
+    trigger: "[data-element-id='\${params.elementId}']",
+    start: "\${params.start}",
+    end: "\${params.end}",
+    scrub: \${params.scrub},
+    markers: \${params.showMarkers}
+  }
+})`,
+        
+        preview: {
+          html: `<div class="preview-container" style="height: 200vh;">
+  <div data-element-id="preview" style="position: relative; top: 50vh;">
+    <h2>Parallax Element</h2>
+  </div>
+</div>`
+        },
+        
+        parameters: [
+          {
+            name: "speed",
+            type: "range",
+            default: 0.5,
+            min: 0.1,
+            max: 2,
+            step: 0.1,
+            description: "Parallax speed multiplier"
+          },
+          {
+            name: "start",
+            type: "select",
+            default: "top bottom",
+            options: [
+              { label: "Top Bottom", value: "top bottom" },
+              { label: "Center Center", value: "center center" },
+              { label: "Top Top", value: "top top" }
+            ],
+            description: "Scroll start position"
+          },
+          {
+            name: "end",
+            type: "select",
+            default: "bottom top",
+            options: [
+              { label: "Bottom Top", value: "bottom top" },
+              { label: "Bottom Bottom", value: "bottom bottom" },
+              { label: "Center Center", value: "center center" }
+            ],
+            description: "Scroll end position"
+          },
+          {
+            name: "scrub",
+            type: "boolean",
+            default: true,
+            description: "Smooth scrub animation"
+          },
+          {
+            name: "showMarkers",
+            type: "boolean",
+            default: false,
+            description: "Show debug markers"
+          }
+        ],
+        
+        requiredPlugins: ["ScrollTrigger"],
+        
+        examplePrompts: [
+          "parallax scroll",
+          "parallax background",
+          "depth scrolling",
+          "layered scroll effect"
+        ],
+        
+        commonUseCases: ["Hero sections", "Background images", "Depth effects", "Storytelling"]
+      })
+    );
+
+    // Reveal on scroll
+    variations.push(
+      this.factory.createTemplate({
+        name: "Scroll Reveal",
+        category: TemplateCategory.SCROLL_TRIGGER,
+        subcategory: "reveal",
+        description: "Reveal elements on scroll",
+        difficulty: "beginner",
+        
+        code: `gsap.from("[data-element-id='\${params.elementId}']", {
+  y: \${params.yOffset},
+  opacity: 0,
+  duration: \${params.duration},
+  ease: "\${params.ease}",
+  scrollTrigger: {
+    trigger: "[data-element-id='\${params.elementId}']",
+    start: "top \${params.triggerPoint}%",
+    end: "bottom 20%",
+    toggleActions: "\${params.toggleActions}",
+    once: \${params.once}
+  }
+})`,
+        
+        preview: {
+          html: `<div class="preview-container" style="height: 150vh; padding-top: 100vh;">
+  <div data-element-id="preview">
+    <h2>Scroll to reveal this element</h2>
+  </div>
+</div>`
+        },
+        
+        parameters: [
+          {
+            name: "yOffset",
+            type: "number",
+            default: 100,
+            min: 0,
+            max: 300,
+            description: "Initial Y offset"
+          },
+          {
+            name: "duration",
+            type: "range",
+            default: 1,
+            min: 0.3,
+            max: 3,
+            step: 0.1,
+            description: "Animation duration"
+          },
+          {
+            name: "ease",
+            type: "select",
+            default: "power2.out",
+            options: [
+              { label: "Power2 Out", value: "power2.out" },
+              { label: "Power3 Out", value: "power3.out" },
+              { label: "Back Out", value: "back.out(1.4)" }
+            ],
+            description: "Easing function"
+          },
+          {
+            name: "triggerPoint",
+            type: "range",
+            default: 80,
+            min: 50,
+            max: 95,
+            step: 5,
+            description: "Trigger point (viewport %)"
+          },
+          {
+            name: "toggleActions",
+            type: "select",
+            default: "play none none reverse",
+            options: [
+              { label: "Play Once", value: "play none none none" },
+              { label: "Play/Reverse", value: "play none none reverse" },
+              { label: "Play/Pause/Resume/Reverse", value: "play pause resume reverse" }
+            ],
+            description: "Toggle behavior"
+          },
+          {
+            name: "once",
+            type: "boolean",
+            default: false,
+            description: "Only animate once"
+          }
+        ],
+        
+        requiredPlugins: ["ScrollTrigger"],
+        
+        examplePrompts: [
+          "scroll reveal",
+          "reveal on scroll",
+          "fade in on scroll",
+          "scroll triggered animation"
+        ],
+        
+        commonUseCases: ["Content sections", "Feature reveals", "Timeline events", "Portfolio items"]
+      })
+    );
+    
+    return variations;
+  }
+
+  /**
+   * Generate SVG animation variations
+   */
+  generateSVGVariations(): Template[] {
+    const variations: Template[] = [];
+    
+    // SVG path draw
+    variations.push(
+      this.factory.createTemplate({
+        name: "SVG Draw Path",
+        category: TemplateCategory.SVG,
+        subcategory: "draw",
+        description: "Draw SVG path animation",
+        difficulty: "intermediate",
+        
+        code: `const path = document.querySelector("[data-element-id='\${params.elementId}'] path");
+const length = path.getTotalLength();
+
+// Set up the path for animation
+gsap.set(path, {
+  strokeDasharray: length,
+  strokeDashoffset: length
+});
+
+// Animate the path
+gsap.to(path, {
+  strokeDashoffset: 0,
+  duration: \${params.duration},
+  ease: "\${params.ease}",
+  delay: \${params.delay}
+})`,
+        
+        preview: {
+          html: `<div class="preview-container">
+  <svg data-element-id="preview" width="200" height="200" viewBox="0 0 200 200">
+    <path d="M50,100 Q100,50 150,100 T250,100" 
+          stroke="#3498db" 
+          stroke-width="3" 
+          fill="none"/>
+  </svg>
+</div>`
+        },
+        
+        parameters: [
+          {
+            name: "duration",
+            type: "range",
+            default: 2,
+            min: 0.5,
+            max: 5,
+            step: 0.1,
+            description: "Draw duration"
+          },
+          {
+            name: "ease",
+            type: "select",
+            default: "power2.inOut",
+            options: [
+              { label: "Power2 InOut", value: "power2.inOut" },
+              { label: "Linear", value: "none" },
+              { label: "Power3 Out", value: "power3.out" }
+            ],
+            description: "Drawing ease"
+          },
+          {
+            name: "delay",
+            type: "number",
+            default: 0,
+            min: 0,
+            max: 2,
+            description: "Animation delay"
+          }
+        ],
+        
+        examplePrompts: [
+          "draw svg path",
+          "svg line animation",
+          "path drawing effect",
+          "svg stroke animation"
+        ],
+        
+        commonUseCases: ["Logo reveals", "Illustrations", "Diagrams", "Signature animations"]
+      })
+    );
+
+    // SVG morph
+    variations.push(
+      this.factory.createTemplate({
+        name: "SVG Morph",
+        category: TemplateCategory.SVG,
+        subcategory: "morph",
+        description: "Morph between SVG shapes",
+        difficulty: "advanced",
+        
+        code: `gsap.to("[data-element-id='\${params.elementId}']", {
+  duration: \${params.duration},
+  attr: {
+    d: "\${params.targetPath}"
+  },
+  ease: "\${params.ease}",
+  repeat: \${params.repeat},
+  yoyo: \${params.yoyo}
+})`,
+        
+        preview: {
+          html: `<div class="preview-container">
+  <svg width="200" height="200" viewBox="0 0 200 200">
+    <path data-element-id="preview" 
+          d="M50,50 h100 v100 h-100 z" 
+          fill="#3498db"/>
+  </svg>
+</div>`
+        },
+        
+        parameters: [
+          {
+            name: "targetPath",
+            type: "text",
+            default: "M100,25 L175,150 L25,150 Z",
+            description: "Target SVG path data"
+          },
+          {
+            name: "duration",
+            type: "range",
+            default: 1.5,
+            min: 0.5,
+            max: 4,
+            step: 0.1,
+            description: "Morph duration"
+          },
+          {
+            name: "ease",
+            type: "select",
+            default: "power2.inOut",
+            options: [
+              { label: "Power2 InOut", value: "power2.inOut" },
+              { label: "Elastic InOut", value: "elastic.inOut(1, 0.5)" },
+              { label: "Back InOut", value: "back.inOut(1.7)" }
+            ],
+            description: "Morphing ease"
+          },
+          {
+            name: "repeat",
+            type: "number",
+            default: 0,
+            min: -1,
+            max: 10,
+            description: "Repeat count (-1 for infinite)"
+          },
+          {
+            name: "yoyo",
+            type: "boolean",
+            default: false,
+            description: "Alternate direction on repeat"
+          }
+        ],
+        
+        requiredPlugins: ["MorphSVGPlugin"],
+        
+        examplePrompts: [
+          "morph svg shape",
+          "svg shape transformation",
+          "shape shifting animation",
+          "svg morph effect"
+        ],
+        
+        commonUseCases: ["Shape transitions", "Icon animations", "Logo transformations", "Interactive graphics"]
+      })
+    );
+    
+    return variations;
+  }
+
+  /**
+   * Generate Physics animation variations
+   */
+  generatePhysicsVariations(): Template[] {
+    const variations: Template[] = [];
+    
+    // Bounce effect
+    variations.push(
+      this.factory.createTemplate({
+        name: "Bounce Drop",
+        category: TemplateCategory.PHYSICS,
+        subcategory: "bounce",
+        description: "Realistic bounce drop effect",
+        difficulty: "intermediate",
+        
+        code: `gsap.from("[data-element-id='\${params.elementId}']", {
+  y: -\${params.dropHeight},
+  duration: \${params.duration},
+  ease: "bounce.out",
+  onComplete: function() {
+    if (\${params.squashStretch}) {
+      gsap.to("[data-element-id='\${params.elementId}']", {
+        scaleX: 1.2,
+        scaleY: 0.8,
+        duration: 0.1,
+        yoyo: true,
+        repeat: 1,
+        ease: "power2.inOut"
+      });
+    }
+  }
+})`,
+        
+        preview: {
+          html: `<div class="preview-container" style="height: 400px; position: relative;">
+  <div data-element-id="preview" style="position: absolute; bottom: 50px; left: 50%;">
+    <div style="width: 80px; height: 80px; background: #e74c3c; border-radius: 50%;"></div>
+  </div>
+</div>`
+        },
+        
+        parameters: [
+          {
+            name: "dropHeight",
+            type: "range",
+            default: 300,
+            min: 100,
+            max: 500,
+            step: 50,
+            description: "Drop height in pixels"
+          },
+          {
+            name: "duration",
+            type: "range",
+            default: 1.5,
+            min: 0.5,
+            max: 3,
+            step: 0.1,
+            description: "Animation duration"
+          },
+          {
+            name: "squashStretch",
+            type: "boolean",
+            default: true,
+            description: "Add squash & stretch on impact"
+          }
+        ],
+        
+        examplePrompts: [
+          "bounce drop",
+          "falling bounce",
+          "gravity bounce",
+          "bouncing ball effect"
+        ],
+        
+        commonUseCases: ["Loading animations", "Game UI", "Playful interactions", "Attention grabbers"]
+      })
+    );
+
+    // Spring physics
+    variations.push(
+      this.factory.createTemplate({
+        name: "Spring Physics",
+        category: TemplateCategory.PHYSICS,
+        subcategory: "spring",
+        description: "Spring-based motion",
+        difficulty: "advanced",
+        
+        code: `// Create spring physics animation
+const spring = {
+  velocity: 0,
+  position: 0,
+  mass: \${params.mass},
+  stiffness: \${params.stiffness},
+  damping: \${params.damping}
+};
+
+gsap.ticker.add((time, deltaTime) => {
+  const element = document.querySelector("[data-element-id='\${params.elementId}']");
+  const rect = element.getBoundingClientRect();
+  const mouseX = gsap.getProperty(element, "data-mouse-x") || 0;
+  
+  // Calculate spring force
+  const force = -spring.stiffness * (spring.position - mouseX);
+  const damping = -spring.damping * spring.velocity;
+  const acceleration = (force + damping) / spring.mass;
+  
+  // Update physics
+  spring.velocity += acceleration * (deltaTime / 1000);
+  spring.position += spring.velocity * (deltaTime / 1000);
+  
+  // Apply to element
+  gsap.set(element, { x: spring.position });
+});
+
+// Track mouse position
+document.addEventListener("mousemove", (e) => {
+  const element = document.querySelector("[data-element-id='\${params.elementId}']");
+  element.setAttribute("data-mouse-x", e.clientX - window.innerWidth / 2);
+});`,
+        
+        preview: {
+          html: `<div class="preview-container">
+  <div data-element-id="preview" style="width: 100px; height: 100px; background: #9b59b6; border-radius: 10px;">
+    <p style="text-align: center; line-height: 100px; color: white;">Spring</p>
+  </div>
+</div>`
+        },
+        
+        parameters: [
+          {
+            name: "mass",
+            type: "range",
+            default: 1,
+            min: 0.1,
+            max: 5,
+            step: 0.1,
+            description: "Object mass"
+          },
+          {
+            name: "stiffness",
+            type: "range",
+            default: 100,
+            min: 10,
+            max: 500,
+            step: 10,
+            description: "Spring stiffness"
+          },
+          {
+            name: "damping",
+            type: "range",
+            default: 10,
+            min: 0,
+            max: 50,
+            step: 1,
+            description: "Spring damping"
+          }
+        ],
+        
+        examplePrompts: [
+          "spring physics",
+          "elastic follow",
+          "springy motion",
+          "physics-based animation"
+        ],
+        
+        commonUseCases: ["Interactive elements", "Cursor followers", "Elastic UI", "Game mechanics"]
+      })
+    );
+    
+    return variations;
+  }
+
+  /**
+   * Generate Advanced animation variations
+   */
+  generateAdvancedVariations(): Template[] {
+    const variations: Template[] = [];
+    
+    // 3D flip card
+    variations.push(
+      this.factory.createTemplate({
+        name: "3D Flip Card",
+        category: TemplateCategory.ADVANCED,
+        subcategory: "3d",
+        description: "3D card flip animation",
+        difficulty: "advanced",
+        
+        code: `const container = document.querySelector("[data-element-id='\${params.elementId}']");
+const front = container.querySelector('.front');
+const back = container.querySelector('.back');
+
+// Set initial states
+gsap.set(container, { perspective: \${params.perspective} });
+gsap.set(back, { rotationY: 180 });
+gsap.set([front, back], { backfaceVisibility: "hidden" });
+
+// Create flip timeline
+const tl = gsap.timeline({ paused: true });
+tl.to(front, {
+  rotationY: 180,
+  duration: \${params.duration},
+  ease: "\${params.ease}"
+})
+.to(back, {
+  rotationY: 360,
+  duration: \${params.duration},
+  ease: "\${params.ease}"
+}, 0);
+
+// Toggle on click
+container.addEventListener('click', () => {
+  tl.reversed() ? tl.play() : tl.reverse();
+});`,
+        
+        preview: {
+          html: `<div class="preview-container">
+  <div data-element-id="preview" style="width: 200px; height: 300px; position: relative; cursor: pointer;">
+    <div class="front" style="position: absolute; width: 100%; height: 100%; background: #3498db; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
+      <h3 style="color: white;">Front</h3>
+    </div>
+    <div class="back" style="position: absolute; width: 100%; height: 100%; background: #e74c3c; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
+      <h3 style="color: white;">Back</h3>
+    </div>
+  </div>
+</div>`
+        },
+        
+        parameters: [
+          {
+            name: "perspective",
+            type: "range",
+            default: 1000,
+            min: 400,
+            max: 2000,
+            step: 100,
+            description: "3D perspective depth"
+          },
+          {
+            name: "duration",
+            type: "range",
+            default: 0.6,
+            min: 0.3,
+            max: 2,
+            step: 0.1,
+            description: "Flip duration"
+          },
+          {
+            name: "ease",
+            type: "select",
+            default: "power2.inOut",
+            options: [
+              { label: "Power2 InOut", value: "power2.inOut" },
+              { label: "Back InOut", value: "back.inOut(1.2)" },
+              { label: "Linear", value: "none" }
+            ],
+            description: "Flip easing"
+          }
+        ],
+        
+        examplePrompts: [
+          "3d card flip",
+          "flip card animation",
+          "card rotation",
+          "3d flip effect"
+        ],
+        
+        commonUseCases: ["Card UI", "Product showcases", "Interactive galleries", "Game interfaces"]
+      })
+    );
+
+    // Particle system
+    variations.push(
+      this.factory.createTemplate({
+        name: "Particle Explosion",
+        category: TemplateCategory.ADVANCED,
+        subcategory: "particles",
+        description: "Particle explosion effect",
+        difficulty: "expert",
+        
+        code: `const container = document.querySelector("[data-element-id='\${params.elementId}']");
+const particleCount = \${params.particleCount};
+
+// Create particles
+for (let i = 0; i < particleCount; i++) {
+  const particle = document.createElement('div');
+  particle.className = 'particle';
+  particle.style.cssText = \`
+    position: absolute;
+    width: \${params.particleSize}px;
+    height: \${params.particleSize}px;
+    background: \${params.particleColor};
+    border-radius: 50%;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  \`;
+  container.appendChild(particle);
+}
+
+// Animate particles
+gsap.to('.particle', {
+  x: () => gsap.utils.random(-\${params.spread}, \${params.spread}),
+  y: () => gsap.utils.random(-\${params.spread}, \${params.spread}),
+  scale: 0,
+  opacity: 0,
+  duration: \${params.duration},
+  stagger: {
+    each: 0.005,
+    from: "random"
+  },
+  ease: "\${params.ease}",
+  onComplete: function() {
+    this.targets().forEach(el => el.remove());
+  }
+});`,
+        
+        preview: {
+          html: `<div class="preview-container">
+  <div data-element-id="preview" style="position: relative; width: 300px; height: 300px;">
+    <button style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);">
+      Click for particles
+    </button>
+  </div>
+</div>`
+        },
+        
+        parameters: [
+          {
+            name: "particleCount",
+            type: "range",
+            default: 50,
+            min: 10,
+            max: 200,
+            step: 10,
+            description: "Number of particles"
+          },
+          {
+            name: "particleSize",
+            type: "range",
+            default: 8,
+            min: 2,
+            max: 20,
+            step: 1,
+            description: "Particle size"
+          },
+          {
+            name: "particleColor",
+            type: "color",
+            default: "#f39c12",
+            description: "Particle color"
+          },
+          {
+            name: "spread",
+            type: "range",
+            default: 150,
+            min: 50,
+            max: 300,
+            step: 10,
+            description: "Explosion spread radius"
+          },
+          {
+            name: "duration",
+            type: "range",
+            default: 1,
+            min: 0.5,
+            max: 3,
+            step: 0.1,
+            description: "Animation duration"
+          },
+          {
+            name: "ease",
+            type: "select",
+            default: "power2.out",
+            options: [
+              { label: "Power2 Out", value: "power2.out" },
+              { label: "Expo Out", value: "expo.out" },
+              { label: "Power4 Out", value: "power4.out" }
+            ],
+            description: "Explosion easing"
+          }
+        ],
+        
+        examplePrompts: [
+          "particle explosion",
+          "particle burst",
+          "confetti effect",
+          "explosion animation"
+        ],
+        
+        commonUseCases: ["Celebrations", "Success states", "Game effects", "Interactive feedback"]
+      })
+    );
+
+
